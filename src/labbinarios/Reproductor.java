@@ -414,7 +414,6 @@ public class Reproductor extends JFrame {
         return String.format("%02d:%02d", m, s);
     }
 
-    // ==== Persistencia con RandomAccessFile ====
     private void writeString(RandomAccessFile raf, String s) throws IOException {
         if (s == null) s = "";
         byte[] b = s.getBytes("UTF-8");
@@ -433,8 +432,8 @@ public class Reproductor extends JFrame {
     private void saveLibrary() {
         try (RandomAccessFile raf = new RandomAccessFile(storeFile, "rw")) {
             raf.setLength(0);
-            raf.writeInt(0x52504C59); // "RPLY"
-            raf.writeShort(1);        // versión
+            raf.writeInt(0x52504C59); 
+            raf.writeShort(1);        
             raf.writeInt(lista.tamano());
             for (int i = 0; i < lista.tamano(); i++) {
                 Cancion c = lista.get(i);
