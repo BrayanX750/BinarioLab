@@ -10,7 +10,7 @@ package labbinarios;
  */
 public class Nodo {
     public Cancion dato;
-    public Nodo text;
+    public Nodo next;
     
     public Nodo(Cancion c){
         this.dato=c;
