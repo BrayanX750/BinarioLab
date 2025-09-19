@@ -21,6 +21,7 @@ import javazoom.jl.converter.Converter;
 
 public class Reproductor extends JFrame {
     private final Lista lista = new Lista();
+    private final Archivos archivos = new Archivos();
 
     private JList<String> vista;
     private DefaultListModel<String> modelo;
@@ -37,7 +38,6 @@ public class Reproductor extends JFrame {
 
     private Cancion actual = null;
     private boolean pausado = false;
-    
 
     private Clip clip;
     private long pauseAtMicros = 0;
@@ -50,8 +50,6 @@ public class Reproductor extends JFrame {
     private final Color text = new Color(245, 245, 245);
     private final Color sub = new Color(179, 179, 179);
     private final Color accent = new Color(29, 185, 84);
-
-    private final File storeFile = new File(System.getProperty("user.home"), "reproductor_playlist.bin");
 
     public Reproductor() {
         setTitle("Reproductor");
@@ -71,7 +69,6 @@ public class Reproductor extends JFrame {
         vista.setFixedCellHeight(28);
         vista.setBorder(new EmptyBorder(8, 10, 8, 10));
         vista.setCellRenderer(new DefaultListCellRenderer() {
-           
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean sel, boolean focus) {
                 JLabel l = (JLabel) super.getListCellRendererComponent(list, value, index, sel, focus);
@@ -171,11 +168,11 @@ public class Reproductor extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                guardarLibreria();
+                archivos.guardar(lista);
             }
         });
 
-        cargarLibreria();
+        archivos.cargar(lista, modelo);
     }
 
     private JButton crearBoton(String t) {
@@ -413,64 +410,6 @@ public class Reproductor extends JFrame {
         long m = total / 60;
         long s = total % 60;
         return String.format("%02d:%02d", m, s);
-    }
-
-    private void writeString(RandomAccessFile raf, String s) throws IOException {
-        if (s == null) s = "";
-        byte[] b = s.getBytes("UTF-8");
-        raf.writeInt(b.length);
-        raf.write(b);
-    }
-
-    private String readString(RandomAccessFile raf) throws IOException {
-        int len = raf.readInt();
-        if (len < 0 || len > 10_000_000) throw new IOException("len");
-        byte[] b = new byte[len];
-        raf.readFully(b);
-        return new String(b, "UTF-8");
-    }
-
-    private void guardarLibreria() {
-        try (RandomAccessFile raf = new RandomAccessFile(storeFile, "rw")) {
-            raf.setLength(0);
-            raf.writeInt(0x52504C59); 
-            raf.writeShort(1);        
-            raf.writeInt(lista.tamano());
-            for (int i = 0; i < lista.tamano(); i++) {
-                Cancion c = lista.get(i);
-                writeString(raf, c.nombre);
-                writeString(raf, c.artista);
-                writeString(raf, c.genero);
-                raf.writeLong(Math.max(0, c.duracionSeg));
-                writeString(raf, c.archivoAudio == null ? "" : c.archivoAudio.getAbsolutePath());
-                writeString(raf, c.archivoImagen == null ? "" : c.archivoImagen.getAbsolutePath());
-            }
-        } catch (Exception ignored) { }
-    }
-
-    private void cargarLibreria() {
-        if (!storeFile.exists()) return;
-        try (RandomAccessFile raf = new RandomAccessFile(storeFile, "r")) {
-            int magic = raf.readInt();
-            short ver = raf.readShort();
-            if (magic != 0x52504C59 || ver != 1) return;
-            int n = raf.readInt();
-            for (int i = 0; i < n; i++) {
-                String nombre = readString(raf);
-                String artista = readString(raf);
-                String genero = readString(raf);
-                long dur = raf.readLong();
-                String audioPath = readString(raf);
-                String imgPath = readString(raf);
-                File audio = audioPath.isEmpty() ? null : new File(audioPath);
-                File img = imgPath.isEmpty() ? null : new File(imgPath);
-                if (audio == null || !audio.exists()) continue;
-                if (img != null && !img.exists()) img = null;
-                Cancion c = new Cancion(nombre, artista, dur, genero, audio, img);
-                lista.add(c);
-                modelo.addElement(c.texto());
-            }
-        } catch (Exception ignored) { }
     }
 
     public static void main(String[] args) {
