@@ -11,27 +11,17 @@ package labbinarios;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import javax.swing.DefaultListModel;
 
 public class Archivos {
     private final File archivoPlaylist;
-    private final File legacyHomeBin;
-    private final File legacyProjectBin;
 
     public Archivos() {
-        File baseDir = new File(System.getProperty("user.dir"), "data");
-        if (!baseDir.exists()) baseDir.mkdirs();
-        this.archivoPlaylist = new File(baseDir, "playlist.rpl");
-        this.legacyHomeBin = new File(System.getProperty("user.home"), "reproductor_playlist.fnf");
-        this.legacyProjectBin = new File(System.getProperty("user.dir"), "reproductor_playlist.fnf");
+        this(new File(System.getProperty("user.dir"), "reproductor_playlist.bin").getAbsolutePath());
     }
 
     public Archivos(String rutaCompleta) {
         this.archivoPlaylist = new File(rutaCompleta);
-        this.legacyHomeBin = new File(System.getProperty("user.home"), "reproductor_playlist.fnf");
-        this.legacyProjectBin = new File(System.getProperty("user.dir"), "reproductor_playlist.fnf");
     }
 
     public void guardar(Lista lista) {
@@ -46,19 +36,15 @@ public class Archivos {
                 escribirCadena(raf, c.artista);
                 escribirCadena(raf, c.genero);
                 raf.writeLong(Math.max(0, c.duracionSeg));
-                escribirCadena(raf, c.archivoAudio == null ? "" : c.archivoAudio.getAbsolutePath());
-                escribirCadena(raf, c.archivoImagen == null ? "" : c.archivoImagen.getAbsolutePath());
+                escribirCadena(raf, c.archivoAudio == null ? "" : c.archivoAudio.getPath());
+                escribirCadena(raf, c.archivoImagen == null ? "" : c.archivoImagen.getPath());
             }
-        } catch (Exception ignored) { }
-        ocultarEnWindows(archivoPlaylist.toPath());
+        } catch (IOException ignored) { }
     }
 
     public void cargar(Lista lista, DefaultListModel<String> modelo) {
-        File fuente = archivoPlaylist.exists() ? archivoPlaylist
-                      : (legacyProjectBin.exists() ? legacyProjectBin
-                      : (legacyHomeBin.exists() ? legacyHomeBin : null));
-        if (fuente == null) return;
-        try (RandomAccessFile raf = new RandomAccessFile(fuente, "r")) {
+        if (!archivoPlaylist.exists()) return;
+        try (RandomAccessFile raf = new RandomAccessFile(archivoPlaylist, "r")) {
             int magic = raf.readInt();
             short ver = raf.readShort();
             if (magic != 0x52504C59 || ver != 1) return;
@@ -78,7 +64,7 @@ public class Archivos {
                 lista.add(c);
                 if (modelo != null) modelo.addElement(c.texto());
             }
-        } catch (Exception ignored) { }
+        } catch (IOException ignored) { }
     }
 
     private void escribirCadena(RandomAccessFile raf, String s) throws IOException {
@@ -90,23 +76,9 @@ public class Archivos {
 
     private String leerCadena(RandomAccessFile raf) throws IOException {
         int len = raf.readInt();
-        if (len < 0 || len > 10_000_000) throw new IOException("len");
+        if (len < 0 || len > 10_000_000) throw new IOException("len inválido");
         byte[] b = new byte[len];
         raf.readFully(b);
         return new String(b, "UTF-8");
-    }
-
-    private void ocultarEnWindows(Path p) {
-        try {
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                if (Files.exists(p) && !Files.getAttribute(p, "dos:hidden").equals(Boolean.TRUE)) {
-                    Files.setAttribute(p, "dos:hidden", Boolean.TRUE);
-                }
-            }
-        } catch (Exception ignored) { }
-    }
-
-    public File getArchivoPlaylist() {
-        return archivoPlaylist;
     }
 }
