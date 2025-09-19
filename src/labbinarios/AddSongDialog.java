@@ -21,7 +21,7 @@ public class AddSongDialog extends JDialog {
     JLabel lPreview;
     JButton bImagen;
     JButton bOk;
-    JButton bCancel;
+    JButton bCancelar;
     File imagenElegida;
     boolean ok = false;
 
@@ -89,10 +89,10 @@ public class AddSongDialog extends JDialog {
         bOk = new JButton("OK");
         bOk.setBackground(accent);
         bOk.setForeground(Color.black);
-        bCancel = new JButton("Cancel");
-        bCancel.setBackground(accent);
-        bCancel.setForeground(Color.black);
-        acciones.add(bCancel);
+        bCancelar = new JButton("Cancel");
+        bCancelar.setBackground(accent);
+        bCancelar.setForeground(Color.black);
+        acciones.add(bCancelar);
         acciones.add(bOk);
 
         add(form, BorderLayout.CENTER);
@@ -113,7 +113,7 @@ public class AddSongDialog extends JDialog {
             ok = true;
             setVisible(false);
         });
-        bCancel.addActionListener(e -> {
+        bCancelar.addActionListener(e -> {
             ok = false;
             setVisible(false);
         });

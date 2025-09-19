@@ -31,9 +31,9 @@ public class Reproductor extends JFrame {
     private final JButton botonPlay;
     private final JButton botonStop;
     private final JButton botonPause;
-    private final JButton botonAdd;
-    private final JButton botonSelect;
-    private final JButton botonRemove;
+    private final JButton botonAgregar;
+    private final JButton botonSeleccionar;
+    private final JButton botonBorrar;
 
     private Cancion actual = null;
     private boolean pausado = false;
@@ -71,6 +71,7 @@ public class Reproductor extends JFrame {
         vista.setFixedCellHeight(28);
         vista.setBorder(new EmptyBorder(8, 10, 8, 10));
         vista.setCellRenderer(new DefaultListCellRenderer() {
+           
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean sel, boolean focus) {
                 JLabel l = (JLabel) super.getListCellRendererComponent(list, value, index, sel, focus);
@@ -115,7 +116,7 @@ public class Reproductor extends JFrame {
             @Override
             public void mousePressed(MouseEvent e) { userDragging = true; }
             @Override
-            public void mouseReleased(MouseEvent e) { userDragging = false; seekFromSlider(); }
+            public void mouseReleased(MouseEvent e) { userDragging = false; seekDeslizador(); }
         });
         slider.addChangeListener(e -> { if (userDragging) tiempoPreview(); });
 
@@ -133,16 +134,16 @@ public class Reproductor extends JFrame {
         botonPlay = crearBoton("Reproducir");
         botonStop = crearBoton("Detener");
         botonPause = crearBoton("Pausar");
-        botonAdd = crearBoton("Agregar");
-        botonSelect = crearBoton("Seleccionar");
-        botonRemove = crearBoton("Borrar");
+        botonAgregar = crearBoton("Agregar");
+        botonSeleccionar = crearBoton("Seleccionar");
+        botonBorrar = crearBoton("Borrar");
 
         JPanel barraBtns = new JPanel(new GridLayout(2, 3, 10, 10));
         barraBtns.setBorder(new EmptyBorder(12, 12, 12, 12));
         barraBtns.setBackground(bg);
-        barraBtns.add(botonAdd);
-        barraBtns.add(botonSelect);
-        barraBtns.add(botonRemove);
+        barraBtns.add(botonAgregar);
+        barraBtns.add(botonSeleccionar);
+        barraBtns.add(botonBorrar);
         barraBtns.add(botonPlay);
         barraBtns.add(botonPause);
         barraBtns.add(botonStop);
@@ -151,9 +152,9 @@ public class Reproductor extends JFrame {
         add(panelDerecha, BorderLayout.CENTER);
         add(barraBtns, BorderLayout.SOUTH);
 
-        botonAdd.addActionListener(e -> addSong());
-        botonSelect.addActionListener(e -> selectSong());
-        botonRemove.addActionListener(e -> removeSong());
+        botonAgregar.addActionListener(e -> addSong());
+        botonSeleccionar.addActionListener(e -> selectSong());
+        botonBorrar.addActionListener(e -> removeSong());
         botonPlay.addActionListener(e -> playSong());
         botonPause.addActionListener(e -> pauseSong());
         botonStop.addActionListener(e -> stopSong());
@@ -170,11 +171,11 @@ public class Reproductor extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                saveLibrary();
+                guardarLibreria();
             }
         });
 
-        loadLibrary();
+        cargarLibreria();
     }
 
     private JButton crearBoton(String t) {
@@ -187,12 +188,12 @@ public class Reproductor extends JFrame {
         return b;
     }
 
-    private boolean isSameSong(Cancion a, Cancion b) {
+    private boolean isMismaCancion(Cancion a, Cancion b) {
         return a != null && b != null && a.archivoAudio != null && b.archivoAudio != null
                 && a.archivoAudio.equals(b.archivoAudio);
     }
 
-    private void clearUI() {
+    private void limpiarUI() {
         stopSong();
         actual = null;
         portada.setIcon(null);
@@ -232,7 +233,7 @@ public class Reproductor extends JFrame {
 
         Cancion c = new Cancion(
                 nombre.isEmpty() ? quitarExt(audio.getName()) : nombre,
-                artista.isEmpty() ? "Unknown" : artista,
+                artista.isEmpty() ? "Desconocido" : artista,
                 Math.max(0, durSeg),
                 genero.isEmpty() ? "General" : genero,
                 audio,
@@ -246,7 +247,7 @@ public class Reproductor extends JFrame {
         int i = vista.getSelectedIndex();
         if (i < 0 || i >= lista.tamano()) return;
         Cancion nueva = lista.get(i);
-        if (isSameSong(nueva, actual)) {
+        if (isMismaCancion(nueva, actual)) {
             mostrarInfo();
             return;
         }
@@ -262,10 +263,10 @@ public class Reproductor extends JFrame {
         int i = vista.getSelectedIndex();
         if (i < 0 || lista.tamano() == 0) return;
         Cancion aEliminar = lista.get(i);
-        boolean esActual = isSameSong(aEliminar, actual);
+        boolean esActual = isMismaCancion(aEliminar, actual);
         lista.remove(i);
         modelo.remove(i);
-        if (esActual) clearUI();
+        if (esActual) limpiarUI();
     }
 
     private void playSong() {
@@ -335,7 +336,7 @@ public class Reproductor extends JFrame {
         if (clip == null || !clip.isOpen()) return;
         long pos = clip.getMicrosecondPosition();
         long len = clip.getMicrosecondLength();
-        tiempo.setText(formatearMicros(pos) + " / " + formatearMicros(len));
+        tiempo.setText(formatearMicroseg(pos) + " / " + formatearMicroseg(len));
         if (len > 0 && !userDragging) {
             int val = (int) Math.min(1000, Math.max(0, (pos * 1000L) / len));
             slider.setValue(val);
@@ -346,7 +347,7 @@ public class Reproductor extends JFrame {
         }
     }
 
-    private void seekFromSlider() {
+    private void seekDeslizador() {
         if (clip == null || !clip.isOpen()) return;
         long len = clip.getMicrosecondLength();
         int v = slider.getValue();
@@ -363,7 +364,7 @@ public class Reproductor extends JFrame {
         long len = clip.getMicrosecondLength();
         int v = slider.getValue();
         long target = (len * v) / 1000L;
-        tiempo.setText(formatearMicros(target) + " / " + formatearMicros(len));
+        tiempo.setText(formatearMicroseg(target) + " / " + formatearMicroseg(len));
     }
 
     private File ensureWav(File mp3) {
@@ -407,7 +408,7 @@ public class Reproductor extends JFrame {
         return String.format("%02d:%02d", m, r);
     }
 
-    private String formatearMicros(long micros) {
+    private String formatearMicroseg(long micros) {
         long total = micros / 1_000_000L;
         long m = total / 60;
         long s = total % 60;
@@ -429,7 +430,7 @@ public class Reproductor extends JFrame {
         return new String(b, "UTF-8");
     }
 
-    private void saveLibrary() {
+    private void guardarLibreria() {
         try (RandomAccessFile raf = new RandomAccessFile(storeFile, "rw")) {
             raf.setLength(0);
             raf.writeInt(0x52504C59); 
@@ -447,7 +448,7 @@ public class Reproductor extends JFrame {
         } catch (Exception ignored) { }
     }
 
-    private void loadLibrary() {
+    private void cargarLibreria() {
         if (!storeFile.exists()) return;
         try (RandomAccessFile raf = new RandomAccessFile(storeFile, "r")) {
             int magic = raf.readInt();
